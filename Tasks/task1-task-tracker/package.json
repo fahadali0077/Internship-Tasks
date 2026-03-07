@@ -1,0 +1,8 @@
+{
+  "name": "task1-task-tracker",
+  "version": "1.0.0",
+  "description": "Task Tracker CLI - closures, reduce/some/every, JSON, error handling",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
