@@ -1,5 +1,4 @@
-# MERN-I: JavaScript & TypeScript
-**Course:** From 25-Feb-2026 to 06-March-2026
+#Internship-Tasks
 
 ---
 
