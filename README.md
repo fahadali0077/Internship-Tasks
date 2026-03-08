@@ -1,4 +1,4 @@
-# Internship-Tasks
+# Mern-I
 ---
 
 ## 📁 Project Structure
