@@ -4,7 +4,7 @@
 ## 📁 Project Structure
 
 ```
-Tasks/
+Mern-I/
 ├── task1-task-tracker/        # JS: OOP, Closures, reduce/some/every, JSON, CLI
 ├── task2-bank-account/        # JS: Prototypal Inheritance, Closures, Currying, call/apply/bind
 ├── task3-shopping-cart/       # JS: ES Modules, Classes, Map/Set, Spread/Destructuring
