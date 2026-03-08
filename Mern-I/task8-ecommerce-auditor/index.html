@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 8 — E-Commerce Inventory Auditor (TypeScript)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+    header { background: #16213e; padding: 18px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #0f3460; }
+    header h1 { font-size: 22px; color: #e94560; }
+    header .sub { font-size: 12px; color: #888; margin-top: 3px; }
+    header .ts-badge { background: #3178C6; color: white; font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+    .toolbar { background: #16213e; padding: 12px 24px; display: flex; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #0f3460; }
+    input[type="text"] { padding: 8px 12px; background: #0f3460; border: 1px solid #1a4a8a; border-radius: 4px; color: #eee; font-size: 13px; width: 220px; }
+    input[type="text"]::placeholder { color: #666; }
+    button { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .btn-primary { background: #e94560; color: white; }
+    .btn-success { background: #0f9b58; color: white; }
+    .btn-info { background: #0f3460; color: #e94560; border: 1px solid #e94560; }
+    select { padding: 8px 10px; background: #0f3460; border: 1px solid #1a4a8a; color: #eee; border-radius: 4px; font-size: 13px; }
+    .main { display: flex; gap: 16px; padding: 16px 24px; }
+    .sidebar { width: 230px; flex-shrink: 0; }
+    .content { flex: 1; min-width: 0; }
+    .stat-card { background: #16213e; border-radius: 6px; padding: 14px; margin-bottom: 10px; border-left: 3px solid #e94560; }
+    .stat-card .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card .value { font-size: 26px; font-weight: bold; color: #e94560; }
+    .section-title { font-size: 14px; font-weight: bold; color: #e94560; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .product-card { background: #16213e; border-radius: 6px; padding: 14px; border: 1px solid #0f3460; transition: border 0.2s; }
+    .product-card:hover { border-color: #e94560; }
+    .product-card.low-stock { border-color: #e67e22; }
+    .product-card.out-of-stock { border-color: #e74c3c; opacity: 0.7; }
+    .product-card h3 { font-size: 14px; margin-bottom: 4px; }
+    .product-card .price { font-size: 18px; font-weight: bold; color: #e94560; }
+    .product-card .category { font-size: 11px; color: #888; margin-bottom: 6px; }
+    .product-card .stock, .product-card .sales { font-size: 12px; margin-top: 4px; }
+    .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 8px; font-weight: bold; margin-top: 4px; margin-right: 4px; }
+    .badge-sale { background: #e94560; color: white; }
+    .badge-low  { background: #e67e22; color: white; }
+    .card-actions { margin-top: 8px; display: flex; gap: 6px; }
+    .card-actions button { font-size: 11px; padding: 4px 8px; }
+    .no-results { color: #888; font-size: 13px; padding: 20px; }
+    .form-section { background: #16213e; border-radius: 6px; padding: 16px; margin-bottom: 16px; border: 1px solid #0f3460; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .form-group { flex: 1; min-width: 110px; }
+    .form-group label { font-size: 11px; color: #888; display: block; margin-bottom: 3px; text-transform: uppercase; }
+    .form-group input, .form-group select { width: 100%; }
+    .form-error { color: #e74c3c; font-size: 11px; margin-top: 3px; }
+    .generic-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .generic-table th { background: #0f3460; color: #e94560; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .generic-table td { padding: 9px 12px; border-bottom: 1px solid #0f3460; color: #ccc; }
+    .generic-table tr:hover td { background: #0f3460; }
+    .table-wrapper { background: #16213e; border-radius: 6px; overflow: hidden; margin-bottom: 20px; border: 1px solid #0f3460; }
+    .audit-log { background: #16213e; border-radius: 6px; border: 1px solid #0f3460; max-height: 180px; overflow-y: auto; }
+    .log-entry { padding: 7px 12px; border-bottom: 1px solid #0f3460; font-size: 12px; color: #aaa; font-family: monospace; }
+    .log-entry .time { color: #e94560; margin-right: 8px; }
+    .alert  { background: #2c1810; border: 1px solid #e67e22; border-radius: 4px; padding: 8px 12px; margin-bottom: 6px; font-size: 13px; color: #e67e22; }
+    .status { background: #0f3460; border-radius: 4px; padding: 7px 12px; font-size: 12px; color: #aaa; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>📦 E-Commerce Inventory Auditor</h1>
+      <div class="sub">TypeScript · Abstract Classes · GenericTable&lt;T&gt; · Utility Types · ES Modules · DOM · Async</div>
+    </div>
+    <span class="ts-badge">TypeScript</span>
+  </header>
+
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="🔍 Search products... (debounced)" />
+    <select id="categoryFilter">
+      <option value="">All Categories</option>
+      <option value="Electronics">Electronics</option>
+      <option value="Books">Books</option>
+      <option value="Clothing">Clothing</option>
+      <option value="Food">Food</option>
+    </select>
+    <select id="sortFilter">
+      <option value="name">Sort: Name</option>
+      <option value="price-asc">Sort: Price ↑</option>
+      <option value="price-desc">Sort: Price ↓</option>
+      <option value="stock">Sort: Stock</option>
+      <option value="sales">Sort: Top Sellers</option>
+    </select>
+    <button class="btn-primary" id="exportBtn">📥 Export JSON</button>
+    <button class="btn-info"    id="auditBtn">🔎 Run Audit</button>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="section-title">📊 Stats</div>
+      <div class="stat-card"><div class="label">Total Products</div><div class="value" id="statTotal">-</div></div>
+      <div class="stat-card"><div class="label">Total Value</div><div class="value" id="statValue">-</div></div>
+      <div class="stat-card"><div class="label">Low Stock</div><div class="value" id="statLowStock" style="color:#e67e22">-</div></div>
+      <div class="stat-card"><div class="label">Top Seller</div><div class="value" id="statTopSeller" style="font-size:13px;color:#0f9b58">-</div></div>
+      <div class="stat-card"><div class="label">Audit Count</div><div class="value" id="statAuditCount" style="color:#aaa">0</div></div>
+      <br/>
+      <div class="section-title">⚠️ Alerts</div>
+      <div id="alertsSection"><div class="status">Run an audit to see alerts.</div></div>
+      <br/>
+      <div class="section-title">📝 Audit Log</div>
+      <div class="audit-log" id="auditLog">
+        <div class="log-entry"><span class="time">--:--</span>App started</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="form-section">
+        <div class="section-title">✏️ Add / Edit Product</div>
+        <div class="form-row">
+          <div class="form-group"><label>Name</label><input type="text" id="fName" placeholder="Product name" /><div class="form-error" id="fNameErr"></div></div>
+          <div class="form-group"><label>Price ($)</label><input type="text" id="fPrice" placeholder="0.00" /><div class="form-error" id="fPriceErr"></div></div>
+          <div class="form-group"><label>Stock</label><input type="text" id="fStock" placeholder="0" /></div>
+          <div class="form-group"><label>Category</label>
+            <select id="fCategory">
+              <option value="Electronics">Electronics</option>
+              <option value="Books">Books</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Food">Food</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Sales</label><input type="text" id="fSales" placeholder="0" /></div>
+        </div>
+        <button class="btn-success" id="addProductBtn">➕ Add Product</button>
+        <button class="btn-info"    id="clearFormBtn" style="margin-left:8px;">Clear</button>
+      </div>
+
+      <div class="section-title">🏪 Products</div>
+      <div class="status" id="gridStatus">Loading...</div>
+      <div class="grid" id="productGrid"></div>
+
+      <div class="section-title">🏆 Top Sellers — <code style="color:#aaa">GenericTable&lt;Product&gt;</code></div>
+      <div class="table-wrapper" id="topSellersMount"></div>
+    </div>
+  </div>
+
+  <!-- Compiled TypeScript entry point (ES module) -->
+  <script type="module" src="dist/main.js"></script>
+</body>
+</html>

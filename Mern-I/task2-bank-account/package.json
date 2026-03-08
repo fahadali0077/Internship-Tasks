@@ -1,0 +1,8 @@
+{
+  "name": "task2-bank-account",
+  "version": "1.0.0",
+  "description": "Bank Account Simulator - prototypal inheritance, closures, currying",
+  "scripts": {
+    "start": "node index.js"
+  }
+}

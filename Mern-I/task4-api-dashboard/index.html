@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 4 - API Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f4f8; color: #333; padding: 20px; }
+    h1 { color: #2c3e50; margin-bottom: 8px; }
+    p { color: #666; margin-bottom: 20px; font-size: 14px; }
+    .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 300px; font-size: 14px; }
+    button { padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #2980b9; }
+    .status { background: #ecf0f1; border-radius: 4px; padding: 10px; margin-bottom: 15px; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+    .card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .card h3 { color: #2c3e50; margin-bottom: 6px; font-size: 15px; }
+    .card p { color: #666; font-size: 13px; line-height: 1.5; }
+    .card .meta { font-size: 12px; color: #999; margin-top: 8px; }
+    .badge { display: inline-block; background: #3498db; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+    .section-title { font-size: 18px; font-weight: bold; color: #2c3e50; margin: 20px 0 10px; }
+    .loader { text-align: center; padding: 40px; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>API Data Dashboard</h1>
+  <p>fetches users posts comments from jsonplaceholder using async await + Promise.allSettled</p>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="search posts (debounced)" />
+    <button id="loadBtn">Load Data</button>
+    <button id="clearBtn" style="background:#e74c3c">Clear</button>
+  </div>
+
+  <div class="status" id="status">click load data to start</div>
+  <div id="output"></div>
+
+  <script>
+    // custom error classes
+    class NetworkError extends Error {
+      constructor(message, statusCode) {
+        super(message)
+        this.name = 'NetworkError'
+        this.statusCode = statusCode
+      }
+    }
+
+    class ParseError extends Error {
+      constructor(message) {
+        super(message)
+        this.name = 'ParseError'
+      }
+    }
+
+    // cache results in WeakMap
+    const cache = new WeakMap()
+    const cacheKeys = {}
+
+    function getCacheKey(url) {
+      if (!cacheKeys[url]) cacheKeys[url] = { url }
+      return cacheKeys[url]
+    }
+
+    function getFromCache(url) {
+      const key = getCacheKey(url)
+      return cache.get(key) || null
+    }
+
+    function setCache(url, data) {
+      const key = getCacheKey(url)
+      cache.set(key, data)
+    }
+
+    // fetch helper with error handling
+    async function fetchData(url) {
+      const cached = getFromCache(url)
+      if (cached) {
+        console.log('cache hit: ' + url)
+        return { data: cached, fromCache: true }
+      }
+
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new NetworkError('HTTP Error: ' + response.statusText, response.status)
+      }
+
+      let data
+      try {
+        data = await response.json()
+      } catch (e) {
+        throw new ParseError('failed to parse json')
+      }
+
+      setCache(url, data)
+      return { data, fromCache: false }
+    }
+
+    // debounce function
+    // makes sure we dont call the api on every keypress
+    function debounce(fn, delay) {
+      let timer
+      return function (...args) {
+        clearTimeout(timer)  // clear old timer
+        timer = setTimeout(() => {
+          fn.apply(this, args)
+        }, delay)
+      }
+    }
+
+    // throttle function
+    function throttle(fn, interval) {
+      let lastTime = 0
+      return function (...args) {
+        const now = Date.now()
+        if (now - lastTime >= interval) {
+          lastTime = now
+          fn.apply(this, args)
+        }
+      }
+    }
+
+    const BASE = 'https://jsonplaceholder.typicode.com'
+
+    async function loadAllData() {
+      setStatus('fetching data...')
+      document.getElementById('output').innerHTML = '<div class="loader">Loading...</div>'
+
+      // Promise.allSettled - doesnt stop if one fails
+      const results = await Promise.allSettled([
+        fetchData(`${BASE}/users`),
+        fetchData(`${BASE}/posts?_limit=10`),
+        fetchData(`${BASE}/comments?_limit=15`),
+      ])
+
+      const [usersResult, postsResult, commentsResult] = results
+
+      let html = ''
+      let statusMsg = ''
+
+      if (usersResult.status === 'fulfilled') {
+        const { data: users, fromCache } = usersResult.value
+        window._allUsers = users
+        statusMsg += `users: ${users.length} loaded. `
+        html += `<div class="section-title">Users (${users.length})</div><div class="grid">`
+        users.forEach(user => {
+          html += `
+            <div class="card">
+              <h3>${user.name}</h3>
+              <p>email: ${user.email}</p>
+              <p>website: ${user.website}</p>
+              <p>company: ${user.company.name}</p>
+              <span class="badge">${user.address.city}</span>
+            </div>`
+        })
+        html += '</div>'
+      } else {
+        statusMsg += 'users failed. '
+        html += `<div class="card"><p>failed to load users: ${usersResult.reason.message}</p></div>`
+      }
+
+      if (postsResult.status === 'fulfilled') {
+        const { data: posts } = postsResult.value
+        window._allPosts = posts
+        statusMsg += `posts: ${posts.length} loaded. `
+
+        // chain - enrich posts with user data
+        const enriched = posts.map(post => {
+          const user = window._allUsers?.find(u => u.id === post.userId)
+          return { ...post, authorName: user?.name || 'User #' + post.userId }
+        })
+        window._enrichedPosts = enriched
+
+        html += renderPosts(enriched)
+      } else {
+        statusMsg += 'posts failed. '
+      }
+
+      if (commentsResult.status === 'fulfilled') {
+        const { data: comments } = commentsResult.value
+        statusMsg += `comments: ${comments.length} loaded.`
+        html += renderComments(comments)
+      } else {
+        statusMsg += 'comments failed.'
+      }
+
+      setStatus(statusMsg)
+      document.getElementById('output').innerHTML = html
+    }
+
+    function renderPosts(posts) {
+      let html = `<div class="section-title">Posts (${posts.length})</div><div class="grid">`
+      posts.forEach(post => {
+        html += `
+          <div class="card">
+            <h3>${post.title}</h3>
+            <p>${post.body}</p>
+            <p class="meta">by: ${post.authorName}</p>
+          </div>`
+      })
+      return html + '</div>'
+    }
+
+    function renderComments(comments) {
+      let html = `<div class="section-title">Comments (${comments.length})</div><div class="grid">`
+      comments.forEach(c => {
+        html += `
+          <div class="card">
+            <h3>${c.name}</h3>
+            <p>${c.body.substring(0, 80)}...</p>
+            <p class="meta">${c.email}</p>
+          </div>`
+      })
+      return html + '</div>'
+    }
+
+    // debounced search - waits 400ms after user stops typing
+    const handleSearch = debounce(function (query) {
+      if (!window._enrichedPosts) {
+        setStatus('load data first')
+        return
+      }
+      const q = query.toLowerCase()
+      const filtered = window._enrichedPosts.filter(
+        p => p.title.toLowerCase().includes(q) || p.body.toLowerCase().includes(q)
+      )
+      setStatus(`found ${filtered.length} posts for "${query}"`)
+      document.getElementById('output').innerHTML = renderPosts(filtered)
+    }, 400)
+
+    // throttle scroll - simulates infinite scroll
+    const handleScroll = throttle(function () {
+      const scrollPos = window.scrollY + window.innerHeight
+      const pageHeight = document.body.scrollHeight
+      if (scrollPos >= pageHeight - 100) {
+        console.log('near bottom - would load more...')
+      }
+    }, 300)
+
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg
+    }
+
+    document.getElementById('loadBtn').addEventListener('click', loadAllData)
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('output').innerHTML = ''
+      document.getElementById('searchInput').value = ''
+      setStatus('cleared')
+    })
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      handleSearch(e.target.value)
+    })
+    window.addEventListener('scroll', handleScroll)
+  </script>
+</body>
+</html>
