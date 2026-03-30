@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * globals.css — Module 4
+ *
+ * Fonts are loaded via next/font (lib/fonts.ts) — NOT via @import.
+ * next/font:
+ *   ✓ Self-hosted — no Google Fonts CDN request
+ *   ✓ Zero layout shift — fonts available before first paint
+ *   ✓ CSS variables injected via <html> className in layout.tsx
+ *
+ * The @import url('https://fonts.googleapis.com/...') pattern is
+ * intentionally removed — it caused layout shift and a privacy-leaking
+ * external request on every page load.
+ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-parchment text-ink antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { @apply bg-parchment; }
+  ::-webkit-scrollbar-thumb { @apply rounded bg-border; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-ink-muted; }
+}
+
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+}
