@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Module 7: Fonts come from next/font (lib/fonts.ts), not Google Fonts CDN link.
+ * The @import is removed — next/font inlines the font-face declarations.
+ * CSS variables --font-inter and --font-playfair are injected by layout.tsx.
+ */
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-parchment text-ink antialiased;
+    font-family: var(--font-inter, system-ui, sans-serif);
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-playfair, Georgia, serif);
+  }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { @apply bg-parchment dark:bg-dark-bg; }
+  ::-webkit-scrollbar-thumb { @apply rounded bg-border dark:bg-dark-border; }
+}
