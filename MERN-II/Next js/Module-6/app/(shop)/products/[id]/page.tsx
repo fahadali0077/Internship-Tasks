@@ -1,0 +1,105 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { fetchProductById, fetchProductIds } from "@/lib/products";
+import { StarRating } from "@/components/products/StarRating";
+import { ImageGallery } from "@/components/products/ImageGallery";
+import { ServerAddToCartButton } from "@/components/products/ServerAddToCartButton";
+import { Badge } from "@/components/ui/badge";
+
+export async function generateStaticParams() {
+  const ids = await fetchProductIds();
+  return ids.map((id) => ({ id }));
+}
+
+export async function generateMetadata({
+  params,
+}: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const product = await fetchProductById(id);
+  if (!product) return { title: "Product not found" };
+  return {
+    title: product.name,
+    description: product.description ?? `Buy ${product.name}.`,
+    openGraph: { title: product.name, images: [{ url: product.image }] },
+  };
+}
+
+const BADGE_VARIANT = { Sale: "sale", New: "new", Hot: "hot" } as const;
+
+export default async function ProductDetailPage({
+  params,
+}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const product = await fetchProductById(id);
+  if (!product) notFound();
+
+  const discount = product.originalPrice != null
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : null;
+
+  return (
+    <div className="pb-16">
+      <nav className="mb-8 flex items-center gap-2 text-sm">
+        <Link href="/" className="text-ink-muted hover:text-amber">Home</Link>
+        <span className="text-border">›</span>
+        <Link href="/products" className="text-ink-muted hover:text-amber">Products</Link>
+        <span className="text-border">›</span>
+        <span className="max-w-[200px] truncate font-medium dark:text-white">{product.name}</span>
+      </nav>
+
+      <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-14">
+        <ImageGallery product={product} />
+
+        <div className="flex flex-col gap-5">
+          {product.badge && (
+            <div><Badge variant={BADGE_VARIANT[product.badge]}>{product.badge}</Badge></div>
+          )}
+          <p className="text-xs font-semibold uppercase tracking-widest text-amber">
+            {product.category}
+          </p>
+          <h1 className="font-serif text-4xl font-normal leading-tight dark:text-white">
+            {product.name}
+          </h1>
+          <StarRating rating={product.rating} reviewCount={product.reviewCount} />
+
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span className="text-4xl font-bold tabular-nums dark:text-white">
+              ${product.price.toFixed(2)}
+            </span>
+            {product.originalPrice != null && (
+              <>
+                <span className="text-lg tabular-nums text-ink-muted line-through">
+                  ${product.originalPrice.toFixed(2)}
+                </span>
+                <span className="rounded-md bg-green-100 px-2 py-1 text-sm font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  Save {discount}%
+                </span>
+              </>
+            )}
+          </div>
+
+          {product.description && (
+            <p className="leading-relaxed text-ink-soft dark:text-ink-muted">
+              {product.description}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-3 pt-2">
+            {/*
+              ServerAddToCartButton calls addToCart() Server Action.
+              No Zustand involved — cart state lives in the session cookie.
+            */}
+            <ServerAddToCartButton productId={product.id} productName={product.name} />
+            <Link
+              href="/products"
+              className="inline-flex items-center justify-center rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-semibold text-ink-soft transition-all hover:border-ink hover:text-ink dark:border-dark-border dark:bg-dark-surface dark:text-white"
+            >
+              ← Back to Products
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
