@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    /* ── Language & environment ─────────────────────────────────────────── */
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    /* ── Module resolution ──────────────────────────────────────────────── */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    /* ── Emit ───────────────────────────────────────────────────────────── */
+    "noEmit": true,
+
+    /* ── JSX ────────────────────────────────────────────────────────────── */
+    "jsx": "react-jsx",
+
+    /* ── Strict type-checking ───────────────────────────────────────────── */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* ── Interop ────────────────────────────────────────────────────────── */
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    /* ── Path aliases ───────────────────────────────────────────────────── */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
