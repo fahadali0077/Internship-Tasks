@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * globals.css — Module 5
+ *
+ * Fonts: loaded via next/font (lib/fonts.ts) — NOT via @import URL.
+ * The @import url('https://fonts.googleapis.com/...') pattern is removed:
+ *   ✗ Causes layout shift (font loads after first paint)
+ *   ✗ Leaks user IP to Google on every page load
+ *   ✗ Breaks in offline / restricted environments
+ *
+ * Dark mode: next-themes sets class="dark" on <html>.
+ * All dark styles use Tailwind's dark: prefix — no manual .dark CSS needed.
+ * The body.dark / .dark body rules previously here fought against next-themes
+ * and were removed.
+ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-parchment text-ink antialiased;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { @apply bg-parchment dark:bg-dark-bg; }
+  ::-webkit-scrollbar-thumb { @apply rounded bg-border dark:bg-dark-border; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-ink-muted; }
+}
+
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+}
