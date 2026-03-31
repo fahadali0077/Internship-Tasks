@@ -114,8 +114,7 @@ export function AddToCartActionButton({
       if (isInCart) {
         result = await removeFromCart(productId);
       } else {
-        // Import lazily to avoid circular — addToCart is also a server action
-        const { addToCart } = await import("@/app/actions/cart");
+        const { addToCart } = await import("@/types");
         result = await addToCart(productId, 1);
       }
       if (!result.success) {
