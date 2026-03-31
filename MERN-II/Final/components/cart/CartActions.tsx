@@ -5,7 +5,7 @@
 import { useTransition } from "react";
 import { Minus, Plus, X, Loader2 } from "lucide-react";
 import { removeFromCart, updateCartQty, clearCart } from "@/app/actions/cart";
-import type { ActionResult } from "@/app/actions/cart";
+import type { ActionResult } from "@/types";
 
 // ── Remove button ─────────────────────────────────────────────────────────────
 interface RemoveButtonProps { productId: string; productName: string; }
