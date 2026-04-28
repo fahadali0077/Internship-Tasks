@@ -1,0 +1,19 @@
+{
+  "name": "mernshop-module1",
+  "version": "1.0.0",
+  "description": "MERN-III Module 1 — Node.js CLI Data Pipeline",
+  "type": "module",
+  "scripts": {
+    "seed": "tsx src/cli/seed.ts",
+    "seed:electronics": "tsx src/cli/seed.ts --filter Electronics",
+    "seed:fashion": "tsx src/cli/seed.ts --filter Fashion",
+    "seed:home": "tsx src/cli/seed.ts --filter \"Home & Kitchen\"",
+    "seed:books": "tsx src/cli/seed.ts --filter Books",
+    "seed:sports": "tsx src/cli/seed.ts --filter Sports"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}

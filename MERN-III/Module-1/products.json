@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Sony WH-1000XM5 Wireless Headphones",
+    "price": 279.99,
+    "originalPrice": 349.99,
+    "image": "https://picsum.photos/seed/prod001/600/600",
+    "rating": 4.8,
+    "reviewCount": 2341,
+    "category": "Electronics",
+    "badge": "Sale",
+    "description": "Industry-leading noise cancellation with 30-hour battery life. Multipoint connection lets you pair two devices simultaneously. Crystal clear hands-free calling.",
+    "stock": 45
+  },
+  {
+    "name": "Apple MacBook Air M3 13-inch",
+    "price": 1099.99,
+    "originalPrice": 1299.99,
+    "image": "https://picsum.photos/seed/prod002/600/600",
+    "rating": 4.9,
+    "reviewCount": 3821,
+    "category": "Electronics",
+    "badge": "Hot",
+    "description": "M3 chip delivers up to 60% faster performance than M1. All-day 18-hour battery life. Fanless design stays silent under load.",
+    "stock": 30
+  },
+  {
+    "name": "Logitech MX Master 3S Wireless Mouse",
+    "price": 99.99,
+    "image": "https://picsum.photos/seed/prod003/600/600",
+    "rating": 4.7,
+    "reviewCount": 4290,
+    "category": "Electronics",
+    "badge": "New",
+    "description": "8000 DPI any-surface tracking. MagSpeed electromagnetic scrolling. Quiet clicks. 70-day battery. Works on glass surfaces.",
+    "stock": 80
+  },
+  {
+    "name": "Samsung 4K QLED Smart TV 55-inch",
+    "price": 749.99,
+    "originalPrice": 999.99,
+    "image": "https://picsum.photos/seed/prod004/600/600",
+    "rating": 4.6,
+    "reviewCount": 1532,
+    "category": "Electronics",
+    "badge": "Sale",
+    "description": "Quantum HDR with Quantum Dot technology. Neural Quantum Processor 4K upscales content. Object Tracking Sound follows the action.",
+    "stock": 20
+  },
+  {
+    "name": "GoPro HERO12 Black Action Camera",
+    "price": 349.99,
+    "image": "https://picsum.photos/seed/prod005/600/600",
+    "rating": 4.5,
+    "reviewCount": 987,
+    "category": "Electronics",
+    "badge": "New",
+    "description": "5.3K60 and 4K120 video. 27MP photos. HyperSmooth 6.0 stabilization. Waterproof to 10m without a housing.",
+    "stock": 55
+  },
+  {
+    "name": "iPad Pro 12.9-inch M4",
+    "price": 1199.99,
+    "originalPrice": 1399.99,
+    "image": "https://picsum.photos/seed/prod006/600/600",
+    "rating": 4.8,
+    "reviewCount": 2104,
+    "category": "Electronics",
+    "badge": "Sale",
+    "description": "Ultra Retina XDR OLED display. M4 chip. Wi-Fi 6E. Works with Apple Pencil Pro and Magic Keyboard.",
+    "stock": 15
+  },
+  {
+    "name": "Anker PowerCore 26800 Portable Charger",
+    "price": 55.99,
+    "image": "https://picsum.photos/seed/prod007/600/600",
+    "rating": 4.6,
+    "reviewCount": 6723,
+    "category": "Electronics",
+    "description": "26800mAh capacity. Charges iPhone 15 up to 6.5 times. Dual USB-C and USB-A ports.",
+    "stock": 120
+  }
+]
