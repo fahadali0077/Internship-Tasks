@@ -1,0 +1,52 @@
+{
+  "name": "mernshop-module5",
+  "version": "1.0.0",
+  "description": "MERN-III Module 4 — Authentication & Authorization",
+  "type": "module",
+  "scripts": {
+    "seed": "tsx src/cli/seed.ts",
+    "seed:electronics": "tsx src/cli/seed.ts --filter Electronics",
+    "seed:fashion": "tsx src/cli/seed.ts --filter Fashion",
+    "seed:home": "tsx src/cli/seed.ts --filter \"Home & Kitchen\"",
+    "seed:books": "tsx src/cli/seed.ts --filter Books",
+    "seed:sports": "tsx src/cli/seed.ts --filter Sports",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:seed": "tsx src/cli/dbSeed.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "mongoose": "^8.4.1",
+    "morgan": "^1.10.0",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cookie-parser": "^1.4.6",
+    "express-rate-limit": "^7.3.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "hpp": "^0.2.3",
+    "compression": "^1.7.4",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^20.14.9",
+    "@types/uuid": "^10.0.0",
+    "mongodb-memory-server": "^11.0.1",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/compression": "^1.7.5",
+    "@types/hpp": "^0.2.6",
+    "@types/multer": "^1.4.11"
+  }
+}
