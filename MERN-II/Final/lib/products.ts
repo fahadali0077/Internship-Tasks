@@ -1,64 +1,57 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import type { Product, Category, SortOption } from "@/types";
 
-
+const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:5000";
 
 export interface FetchProductsOptions {
   q?: string;
   category?: Category | "All" | string;
   sort?: SortOption | "featured" | string;
+  page?: number;
+  limit?: number;
 }
-
-/** Raw data fetch — reads the static JSON file directly from disk. */
-function getProductsData(): Product[] {
-  const filePath = join(process.cwd(), "public", "api", "products.json");
-  const raw = readFileSync(filePath, "utf-8");
-  return JSON.parse(raw) as Product[];
-}
-
-/** Apply filters and sorting in memory. */
-function applyFilters(products: Product[], opts: FetchProductsOptions): Product[] {
-  let list = [...products];
-
-  if (opts.category && opts.category !== "All") {
-    list = list.filter((p) => p.category === opts.category);
-  }
-
-  if (opts.q?.trim()) {
-    const q = opts.q.trim().toLowerCase();
-    list = list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q),
-    );
-  }
-
-  switch (opts.sort) {
-    case "price-asc": list.sort((a, b) => a.price - b.price); break;
-    case "price-desc": list.sort((a, b) => b.price - a.price); break;
-    case "rating-desc": list.sort((a, b) => b.rating - a.rating); break;
-    case "reviews-desc": list.sort((a, b) => b.reviewCount - a.reviewCount); break;
-    default: break; // "featured" — keep original order
-  }
-
-  return list;
-}
-
-// ── Public API ────────────────────────────────────────────────────────────────
 
 export async function fetchProducts(opts: FetchProductsOptions = {}): Promise<Product[]> {
-  const data = getProductsData();
-  return applyFilters(data, opts);
+  const params = new URLSearchParams();
+  if (opts.category && opts.category !== "All") params.set("category", opts.category);
+  if (opts.sort && opts.sort !== "featured")    params.set("sort", opts.sort);
+  if (opts.q?.trim())                           params.set("search", opts.q.trim());
+  if (opts.page)                                params.set("page", String(opts.page));
+  if (opts.limit)                               params.set("limit", String(opts.limit));
+
+  try {
+    const res = await fetch(`${API_URL}/api/v1/products?${params.toString()}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { success: boolean; data: Product[] };
+    return json.success ? json.data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchProductById(id: string): Promise<Product | null> {
-  const products = getProductsData();
-  return products.find((p) => p.id === id) ?? null;
+  try {
+    const res = await fetch(`${API_URL}/api/v1/products/${id}`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { success: boolean; data: Product };
+    return json.success ? json.data : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchProductIds(): Promise<string[]> {
-  const products = getProductsData();
-  return products.map((p) => p.id);
+  try {
+    const res = await fetch(`${API_URL}/api/v1/products?limit=100`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { success: boolean; data: Product[] };
+    return json.success ? json.data.map((p) => p.id).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
 }

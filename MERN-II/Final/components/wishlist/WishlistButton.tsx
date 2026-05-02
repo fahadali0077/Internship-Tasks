@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
+import { toast } from "@/stores/toastStore";
 
 interface WishlistButtonProps {
   product: Product;
@@ -19,7 +20,13 @@ export function WishlistButton({ product, className }: WishlistButtonProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const wasWishlisted = isWishlisted;
     toggle(product);
+    if (wasWishlisted) {
+      toast.info("Removed from wishlist", `${product.name} removed.`);
+    } else {
+      toast.success("Added to wishlist", `${product.name} saved!`);
+    }
     // Trigger heart pop animation
     setPopping(true);
     setTimeout(() => setPopping(false), 500);

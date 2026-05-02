@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AnimatedCartDrawer } from "@/components/layout/AnimatedCartDrawer";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { Toaster } from "@/components/ui/Toaster";
 
 export const metadata: Metadata = {
   ...DEFAULT_METADATA,
@@ -24,10 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <AnimatedCartDrawer />
           <Navbar />
-          <main className="mx-auto w-full max-w-screen-xl flex-1 px-4 py-10 md:px-6 md:py-12">
+          <main className="mx-auto w-full max-w-screen-xl flex-1 px-5 pt-8 pb-12 sm:px-8 md:px-10 md:pt-12 md:pb-16">
             {children}
           </main>
           <Footer />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

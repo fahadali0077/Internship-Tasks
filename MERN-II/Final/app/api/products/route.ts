@@ -1,53 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { fetchProducts } from "@/lib/products";
-import { ProductsQuerySchema } from "@/schemas";
 import type { ApiResponse, Product } from "@/types";
+
+const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:5000";
 
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<Product[]>>> {
   try {
     const { searchParams } = new URL(request.url);
-
-    // Parse query params into a plain object for Zod
-    const rawParams = Object.fromEntries(searchParams.entries());
-
-    const parsed = ProductsQuerySchema.safeParse(rawParams);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false as const,
-          error: "Invalid query parameters",
-          code: "VALIDATION_ERROR",
-          // Attach field-level errors so API consumers know exactly what's wrong
-          ...{ details: parsed.error.flatten().fieldErrors },
-        },
-        { status: 400 },
-      );
-    }
-
-    const { category, sort } = parsed.data;
-
-    let products = await fetchProducts();
-
-    if (category && category !== "All") {
-      products = products.filter((p) => p.category === category);
-    }
-
-    if (sort === "price-asc") products = [...products].sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") products = [...products].sort((a, b) => b.price - a.price);
-    if (sort === "rating-desc") products = [...products].sort((a, b) => b.rating - a.rating);
-    if (sort === "reviews-desc") products = [...products].sort((a, b) => b.reviewCount - a.reviewCount);
-
-    return NextResponse.json(
-      { success: true as const, data: products, message: `${products.length} products` },
-      { status: 200, headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate" } },
-    );
+    const res = await fetch(`${API_URL}/api/v1/products?${searchParams.toString()}`, {
+      next: { revalidate: 60 },
+    });
+    const data = (await res.json()) as ApiResponse<Product[]>;
+    return NextResponse.json(data, {
+      status: res.status,
+      headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate" },
+    });
   } catch (error) {
-    console.error("[GET /api/products]", error);
+    console.error("[GET /api/products → backend]", error);
     return NextResponse.json(
-      { success: false as const, error: "Internal server error", code: "SERVER_ERROR" },
-      { status: 500 },
+      { success: false as const, error: "Failed to reach backend", code: "BACKEND_UNREACHABLE" },
+      { status: 502 }
     );
   }
 }

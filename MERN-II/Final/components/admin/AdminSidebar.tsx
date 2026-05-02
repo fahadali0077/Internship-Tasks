@@ -1,57 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { adminLogoutAction } from "@/app/actions/auth";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ShoppingBag, LayoutDashboard, Package, Zap, Users, Store, Home, LogOut, ChevronRight } from "lucide-react";
+import {
+  ShoppingBag, LayoutDashboard, Package, Zap,
+  Users, Store, Home, ChevronRight, X,
+} from "lucide-react";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useAuthStore } from "@/stores/authStore";
 
-const NAV_ITEMS = [
-  { href: "/admin",          label: "Dashboard",   icon: LayoutDashboard, exact: true  },
-  { href: "/admin/products", label: "Products",    icon: Package,         exact: false },
-  { href: "/admin/orders",   label: "Live Orders", icon: Zap,             exact: false },
-  { href: "/admin/users",    label: "Users",       icon: Users,           exact: false },
+type Role = "admin" | "customer";
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  exact: boolean;
+  badge: string | null;
+  roles: Role[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, badge: null, roles: ["admin"] },
+  { href: "/admin/products", label: "Products", icon: Package, exact: false, badge: null, roles: ["admin"] },
+  { href: "/admin/orders", label: "Live Orders", icon: Zap, exact: false, badge: "Live", roles: ["admin"] },
+  { href: "/admin/users", label: "Users", icon: Users, exact: false, badge: null, roles: ["admin"] },
 ];
 
 const STORE_ITEMS = [
-  { href: "/",         label: "Home",       icon: Home  },
+  { href: "/", label: "Home", icon: Home },
   { href: "/products", label: "Storefront", icon: Store },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
-  const router   = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const role = (user?.role ?? "admin") as Role;
 
-  const handleLogout = async () => {
-    await adminLogoutAction();
-    router.push("/admin/login");
-  };
-
-  return (
+  const SidebarContent = () => (
     <aside className="flex h-full w-[220px] flex-shrink-0 flex-col border-r border-border bg-white dark:border-dark-border dark:bg-dark-surface">
 
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink dark:bg-amber">
-          <ShoppingBag size={15} className="text-white" strokeWidth={2.5} />
+      {/* Logo + mobile close button */}
+      <div className="flex items-center justify-between px-5 py-5">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink dark:bg-amber shadow-sm">
+            <ShoppingBag size={15} className="text-white" strokeWidth={2.5} />
+          </div>
+          <div>
+            <p className="font-serif text-sm tracking-tight text-ink dark:text-white">
+              MERN<span className="text-amber">Shop</span>
+            </p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-ink-muted">
+              Admin Panel
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-serif text-sm tracking-tight text-ink dark:text-white">
-            MERN<span className="text-amber">Shop</span>
-          </p>
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-ink-muted">Admin</p>
-        </div>
+        {/* Close button — only visible on mobile */}
+        <button
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-raised hover:text-ink dark:hover:bg-dark-surface-2 dark:hover:text-white md:hidden"
+          aria-label="Close sidebar"
+        >
+          <X size={15} />
+        </button>
       </div>
 
-      <div className="mx-4 mb-2 h-px bg-border dark:bg-dark-border" />
+      <div className="mx-4 h-px bg-border dark:bg-dark-border" />
 
       {/* Main nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2" aria-label="Admin navigation">
-        <p className="mb-1 px-2 text-[9px] font-semibold uppercase tracking-widest text-ink-muted/70">
+      <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Admin navigation">
+        <p className="mb-2 px-2 text-[9px] font-semibold uppercase tracking-widest text-ink-muted/60">
           Management
         </p>
         <ul className="space-y-0.5">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => {
+          {NAV_ITEMS.filter(item => item.roles.includes(role)).map(({ href, label, icon: Icon, exact, badge }) => {
             const isActive = exact ? pathname === href : pathname.startsWith(href);
             return (
               <li key={href}>
@@ -61,31 +89,42 @@ export function AdminSidebar() {
                   className={cn(
                     "group flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
                     isActive
-                      ? "bg-amber-dim text-amber font-semibold dark:bg-amber/10"
-                      : "text-ink-soft hover:bg-amber-50 hover:text-amber-700 dark:text-white/70 dark:hover:bg-amber/10 dark:hover:text-amber",
+                      ? "bg-primary-light text-primary font-semibold dark:bg-primary/10 dark:text-primary"
+                      : "text-ink-soft hover:bg-surface-raised hover:text-ink dark:text-white/70 dark:hover:bg-dark-surface-2 dark:hover:text-white",
                   )}
-                  style={isActive ? { borderLeft: "3px solid #C47F17", paddingLeft: "calc(0.75rem - 3px)" } : { borderLeft: "3px solid transparent", paddingLeft: "calc(0.75rem - 3px)" }}
                 >
-                  <Icon size={15} className="flex-shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon
+                    size={15}
+                    className={cn("flex-shrink-0 transition-colors",
+                      isActive ? "text-primary" : "text-ink-muted group-hover:text-ink dark:text-white/40 dark:group-hover:text-white"
+                    )}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
                   <span className="flex-1 truncate">{label}</span>
-                  {isActive && <ChevronRight size={12} className="opacity-60" />}
+                  {badge && (
+                    <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      {badge}
+                    </span>
+                  )}
+                  {isActive && !badge && <ChevronRight size={11} className="opacity-50" />}
                 </Link>
               </li>
             );
           })}
         </ul>
 
-        <p className="mb-1 mt-5 px-2 text-[9px] font-semibold uppercase tracking-widest text-ink-muted/70">
+        <div className="mx-1 my-4 h-px bg-border dark:bg-dark-border" />
+
+        <p className="mb-2 px-2 text-[9px] font-semibold uppercase tracking-widest text-ink-muted/60">
           Storefront
         </p>
         <ul className="space-y-0.5">
           {STORE_ITEMS.map(({ href, label, icon: Icon }) => (
             <li key={href}>
-              <Link
-                href={href}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-all duration-150 hover:bg-amber-50 hover:text-amber-700 dark:text-white/70 dark:hover:bg-amber/10 dark:hover:text-amber"
+              <Link href={href}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-all duration-150 hover:bg-surface-raised hover:text-ink dark:text-white/70 dark:hover:bg-dark-surface-2 dark:hover:text-white"
               >
-                <Icon size={15} className="flex-shrink-0" strokeWidth={2} />
+                <Icon size={15} className="flex-shrink-0 text-ink-muted dark:text-white/40" strokeWidth={2} />
                 <span className="truncate">{label}</span>
               </Link>
             </li>
@@ -93,17 +132,41 @@ export function AdminSidebar() {
         </ul>
       </nav>
 
-      {/* Footer / logout */}
-      <div className="mx-4 mb-2 h-px bg-border dark:bg-dark-border" />
-      <div className="p-3">
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-muted transition-all duration-150 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-        >
-          <LogOut size={15} strokeWidth={2} />
-          Sign out
-        </button>
+      {/* Footer */}
+      <div className="mx-4 h-px bg-border dark:bg-dark-border" />
+      <div className="flex items-center justify-between px-5 py-4">
+        <span className="text-xs text-ink-muted">Theme</span>
+        <ThemeToggle />
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* ── Desktop: always-visible sidebar ─────────────────────────────────── */}
+      <div className="hidden md:flex">
+        <SidebarContent />
+      </div>
+
+      {/* ── Mobile: slide-in drawer with backdrop ────────────────────────────── */}
+      {/* Backdrop */}
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      {/* Drawer */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:hidden",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <SidebarContent />
+      </div>
+    </>
   );
 }

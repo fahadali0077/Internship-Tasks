@@ -7,6 +7,8 @@ import { addToCart, removeFromCart } from "@/app/actions/cart";
 import { useCartStore, type CartState } from "@/stores/cartStore";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
+import { toast } from "@/stores/toastStore";
+import { useAuthStore } from "@/stores/authStore";
 
 interface AddToCartButtonProps {
   product: Product;
@@ -14,6 +16,7 @@ interface AddToCartButtonProps {
   size?: "default" | "lg";
 }
 
+// Admins should not be able to add to cart
 export function AddToCartButton({ product, isInCartSession = false, size = "lg" }: AddToCartButtonProps) {
   const [isPending, startTransition] = useTransition();
   const addItemToStore    = useCartStore((s: CartState) => s.addItem);
@@ -24,16 +27,24 @@ export function AddToCartButton({ product, isInCartSession = false, size = "lg" 
   );
 
   const isInCart = isInCartSession || isInStore;
+  const role = useAuthStore((s) => s.user?.role);
+
+  // Admins cannot shop — return nothing so the button simply doesn't appear
+  if (role === "admin") return null;
 
   const handleClick = () => {
     startTransition(async () => {
       if (isInCart) {
         removeItemFromStore(product.id);
-        await removeFromCart(product.id);
+        const result = await removeFromCart(product.id);
+        if (result.success) toast.info("Removed from cart", `${product.name} removed.`);
+        else toast.error("Could not remove", result.message);
       } else {
         addItemToStore(product, 1);
         openDrawer();
-        await addToCart(product.id, 1);
+        const result = await addToCart(product.id, 1);
+        if (result.success) toast.success("Added to cart", `${product.name} added!`);
+        else toast.error("Could not add to cart", result.message);
       }
     });
   };

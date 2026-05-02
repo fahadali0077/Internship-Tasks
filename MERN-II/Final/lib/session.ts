@@ -8,6 +8,7 @@ export type SessionCartItem = CartItem;
 export type SessionCart = SessionCartItem[];
 
 export interface SessionUser {
+  name?: string;
   email: string;
   role: "customer" | "admin";
 }

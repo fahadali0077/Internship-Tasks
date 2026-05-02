@@ -1,173 +1,127 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react";
-import { useAuthStore } from "@/stores/authStore";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { loginAction } from "@/app/actions/auth";
+import { useAuthStore } from "@/stores/authStore";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import type { User } from "@/types";
+import { toast } from "@/stores/toastStore";
 
-interface FieldErrors {
-  email?: string;
-  password?: string;
-}
+const LoginSchema = z.object({
+  email:    z.string().email("Valid email required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+type LoginValues = z.infer<typeof LoginSchema>;
 
 export function LoginForm() {
-  const [email,       setEmail]       = useState("");
-  const [password,    setPassword]    = useState("");
-  const [showPass,    setShowPass]    = useState(false);
-  const [errors,      setErrors]      = useState<FieldErrors>({});
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [loading,     setLoading]     = useState(false);
-  const [success,     setSuccess]     = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const router  = useRouter();
 
-  const router = useRouter();
-  const login  = useAuthStore((s) => s.login);
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const validateEmail    = (v: string) => emailRegex.test(v) ? undefined : "Please enter a valid email address";
-  const validatePassword = (v: string) => v.length >= 8      ? undefined : "Password must be at least 8 characters";
+  // Clear fields on mount to defeat browser autofill
+  useEffect(() => {
+    const t = setTimeout(() => form.reset({ email: "", password: "" }), 50);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
+  const onSubmit = async (values: LoginValues) => {
+    setError(null);
+    const result = await loginAction(values.email, values.password);
 
-    const emailErr = validateEmail(email);
-    const passErr  = validatePassword(password);
-    if (emailErr || passErr) {
-      setErrors({ email: emailErr, password: passErr });
+    if (!result.success) {
+      setError(result.message);
+      toast.error("Sign in failed", result.message);
       return;
     }
 
-    setLoading(true);
-    try {
-      // Server Action sets session + cart cookies
-      const result = await loginAction(email, password);
-
-      if (!result.success) {
-        setSubmitError(result.message);
-        return;
-      }
-
-      // Update Zustand store for client-side UI
-      await login(email, password);
-      setSuccess(true);
-
-      // Check if there's a redirect param
-      const params = new URLSearchParams(window.location.search);
-      const from = params.get("from") ?? "/account";
-      setTimeout(() => router.push(from), 1200);
-    } catch (err) {
-      console.error(err);
-      setSubmitError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    if (result.data) {
+      setAuth(result.data.user as unknown as User, result.data.accessToken);
     }
+
+    const userName = result.data?.user?.name ?? "there";
+    toast.success(`Welcome back, ${userName}!`, "You are now signed in.");
+
+    // Redirect admins to the dashboard, regular users to their account
+    const role = result.data?.user?.role;
+    const searchParams = new URLSearchParams(window.location.search);
+    const from = searchParams.get("from");
+
+    if (role === "admin") {
+      router.push("/admin");
+    } else if (from && from.startsWith("/") && !from.startsWith("//")) {
+      router.push(from);
+    } else {
+      router.push("/account");
+    }
+    router.refresh();
   };
 
   return (
-    <>
-      {success && (
-        <div className="fixed left-1/2 top-5 z-50 -translate-x-1/2 animate-slide-up">
-          <div className="flex items-center gap-2.5 rounded-full bg-green-600 px-5 py-3 text-sm font-medium text-white shadow-xl shadow-green-600/25">
-            <CheckCircle2 size={16} strokeWidth={2.5} />
-            Welcome back! Redirecting…
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-5" noValidate>
-
-        {/* Email */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-medium text-ink dark:text-white">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
-            onBlur={() => setErrors((p) => ({ ...p, email: validateEmail(email) }))}
-            className={[
-              "h-11 w-full rounded-xl border px-4 py-2.5 text-[14px] text-ink outline-none transition-all",
-              "dark:bg-dark-surface dark:text-white placeholder:text-ink-muted",
-              "focus:ring-2",
-              errors.email
-                ? "border-red-400 focus:border-red-500 focus:ring-red-400/20"
-                : "border-border dark:border-dark-border focus:border-amber focus:ring-amber/20",
-            ].join(" ")}
-          />
-          {errors.email && (
-            <p className="text-xs text-red-500">{errors.email}</p>
-          )}
-        </div>
-
-        {/* Password */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-sm font-medium text-ink dark:text-white">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              id="password"
-              type={showPass ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder="Your password (8+ characters)"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
-              onBlur={() => setErrors((p) => ({ ...p, password: validatePassword(password) }))}
-              className={[
-                "h-11 w-full rounded-xl border px-4 py-2.5 pr-11 text-[14px] text-ink outline-none transition-all",
-                "dark:bg-dark-surface dark:text-white placeholder:text-ink-muted",
-                "focus:ring-2",
-                errors.password
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-400/20"
-                  : "border-border dark:border-dark-border focus:border-amber focus:ring-amber/20",
-              ].join(" ")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPass((v) => !v)}
-              aria-label={showPass ? "Hide password" : "Show password"}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted transition-colors hover:text-ink dark:hover:text-white"
-            >
-              {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="text-xs text-red-500">{errors.password}</p>
-          )}
-        </div>
-
-        {submitError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400" role="alert">
-            {submitError}
+    <Form {...form}>
+      <form onSubmit={(e) => { void form.handleSubmit(onSubmit)(e); }} className="space-y-4" noValidate autoComplete="off">
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+            {error}
           </div>
         )}
 
-        <p className="text-center text-xs text-ink-muted">
-          Use any valid email and a password of 8+ characters to sign in.
-        </p>
+        <FormField control={form.control} name="email" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Email</FormLabel>
+            <FormControl>
+              <Input type="email" placeholder="you@example.com" autoComplete="off" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
 
-        <button
-          type="submit"
-          disabled={loading || success}
-          className={[
-            "flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold tracking-wide text-white",
-            "transition-all duration-200 active:scale-[0.97] disabled:opacity-60",
-            success
-              ? "bg-green-600 shadow-md shadow-green-600/25"
-              : "bg-primary shadow-md shadow-primary/25 hover:bg-primary-600 hover:shadow-lg hover:shadow-primary/30",
-          ].join(" ")}
-        >
-          {loading  ? <><Loader2 size={16} className="animate-spin" /> Signing in…</> :
-           success  ? <><CheckCircle2 size={16} /> Signed in!</> :
-           "Sign In"}
-        </button>
+        <FormField control={form.control} name="password" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Password</FormLabel>
+            <FormControl>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  className="pr-11"
+                  {...field}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-muted hover:text-ink dark:hover:text-white"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
 
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting
+            ? <><Loader2 size={16} className="animate-spin" /> Signing in…</>
+            : "Sign in"}
+        </Button>
       </form>
-    </>
+    </Form>
   );
 }

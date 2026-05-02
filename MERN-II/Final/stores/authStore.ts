@@ -1,12 +1,14 @@
 "use client";
+
 import { create } from "zustand";
 import { persist, devtools } from "zustand/middleware";
 import type { User } from "@/types";
 
 interface AuthState {
   user: User | null;
+  accessToken: string | null;
   isAuthenticated: boolean;
-  login: (email: string, _password: string) => Promise<void>;
+  setAuth: (user: User, accessToken: string) => void;
   logout: () => void;
 }
 
@@ -15,37 +17,25 @@ export const useAuthStore = create<AuthState>()(
     persist(
       (set) => ({
         user: null,
+        accessToken: null,
         isAuthenticated: false,
-        login: async (email: string, _password: string) => {
-          // Small delay for UX feedback
-          await new Promise((r) => setTimeout(r, 500));
-          set(
-            {
-              isAuthenticated: true,
-              user: {
-                id: `user-${Date.now()}`,
-                name: email.split("@")[0] ?? "User",
-                email,
-                role: "customer",
-                createdAt: new Date().toISOString(),
-              },
-            },
-            false,
-            "auth/login",
-          );
+
+        // Called after successful login/register — stores real user + token
+        setAuth: (user: User, accessToken: string) => {
+          set({ user, accessToken, isAuthenticated: true }, false, "auth/setAuth");
         },
+
         logout: () => {
-          // Clear Zustand state
-          set({ user: null, isAuthenticated: false }, false, "auth/logout");
-          // Clear server-side cookies via API call (fire-and-forget)
+          set({ user: null, accessToken: null, isAuthenticated: false }, false, "auth/logout");
+          // Clear server-side session & cart cookies
           fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
         },
       }),
       {
         name: "mernshop-auth",
-        partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }),
-      },
+        partialize: (s) => ({ user: s.user, accessToken: s.accessToken, isAuthenticated: s.isAuthenticated }),
+      }
     ),
-    { name: "AuthStore" },
-  ),
+    { name: "AuthStore" }
+  )
 );

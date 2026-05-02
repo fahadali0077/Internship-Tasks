@@ -7,6 +7,7 @@ import { SHIMMER_BLUR } from "@/lib/imageUtils";
 import { CategoryCard } from "@/components/home/CategoryCard";
 import { FeaturedProductCard } from "@/components/home/FeaturedProductCard";
 import { ScrollRevealSection } from "@/components/home/ScrollRevealSection";
+import { HeroCTA } from "@/components/home/HeroCTA";
 import { StatsBar } from "@/components/home/StatsBar";
 
 export const metadata: Metadata = {
@@ -28,7 +29,7 @@ const CATEGORY_CONFIG: Record<string, { color: string; icon: string }> = {
 
 export default async function HomePage() {
   const products   = await fetchProducts();
-  const featured   = products.slice(0, 4);
+  const featured   = products.slice(0, 3);
   const categories = [...new Set(products.map((p) => p.category))];
 
   const stats = [
@@ -42,9 +43,9 @@ export default async function HomePage() {
     <div className="flex flex-col gap-24">
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-      <section className="hero-gradient-overlay relative grid gap-12 py-4 lg:grid-cols-[1fr_460px] lg:items-center">
+      <section className="hero-gradient-overlay relative grid gap-10 pt-8 pb-12 md:grid-cols-[1fr_420px] md:items-start md:gap-12 lg:grid-cols-[1fr_460px]">
 
-        <div>
+        <div className="self-start">
           {/* Announcement pill */}
           <div className="animate-hero-5 mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary-light px-3.5 py-1.5 text-xs font-semibold text-primary dark:border-primary/20 dark:bg-primary/10">
             <Zap size={11} strokeWidth={2.5} className="animate-pulse" />
@@ -78,21 +79,7 @@ export default async function HomePage() {
             Thousands of carefully selected products across electronics, fashion, books, and lifestyle — all in one beautifully fast store.
           </p>
 
-          <div className="animate-hero-3 flex flex-wrap gap-3">
-            <Link
-              href="/products"
-              className="group inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3.5 text-[13px] font-semibold tracking-wide text-white shadow-md shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary-600 hover:shadow-lg hover:shadow-primary/35 active:scale-[0.97]"
-            >
-              Shop Now
-              <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
-            <Link
-              href="/auth/register"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-7 py-3.5 text-[13px] font-semibold tracking-wide text-ink-soft shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary-light hover:text-primary hover:shadow-sm active:scale-[0.97] dark:border-dark-border dark:bg-dark-surface dark:text-white dark:hover:border-primary/50 dark:hover:bg-primary/10 dark:hover:text-primary"
-            >
-              Create Account
-            </Link>
-          </div>
+          <HeroCTA />
 
           {/* Trust badges */}
           <div className="animate-hero-4 mt-10 flex flex-wrap items-center gap-6">
@@ -111,8 +98,8 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Featured product image grid */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Featured product image grid — hidden on mobile so text shows first */}
+        <div className="hidden grid-cols-2 gap-3 self-start md:grid">
           {featured.map((p, i) => (
             <Link
               key={p.id}
@@ -134,7 +121,7 @@ export default async function HomePage() {
                 priority={i < 2}
                 placeholder="blur"
                 blurDataURL={SHIMMER_BLUR}
-                sizes="(max-width: 768px) 90vw, 460px"
+                sizes="(max-width: 768px) 90vw, (max-width: 1024px) 420px, 460px"
                 className="object-cover transition-transform duration-600 ease-expo-out group-hover:scale-[1.06]"
               />
               {/* Gradient overlay */}

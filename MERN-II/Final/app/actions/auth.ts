@@ -3,61 +3,126 @@
 import { cookies } from "next/headers";
 import type { ActionResult } from "@/types";
 
-const CART_COOKIE    = "mern_cart";
-const SESSION_COOKIE = "session";
-const ADMIN_COOKIE   = "mernshop_admin";
-const ADMIN_EMAIL    = "admin@mernshop.com";
-const ADMIN_PASSWORD = "Admin@1234";
+const API = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:5000";
 
-const COOKIE_OPTS = {
-  httpOnly: true,
-  sameSite: "lax" as const,
-  path: "/",
-  secure: process.env.NODE_ENV === "production",
-};
-
-// ── Customer login ─────────────────────────────────────────────────────────────
+// ── Customer / Admin login — single endpoint, role-based cookie ───────────────
 export async function loginAction(
   email: string,
-  password: string,
-): Promise<ActionResult> {
+  password: string
+): Promise<ActionResult<{ accessToken: string; user: { name: string; email: string; role: string } }>> {
   try {
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return { success: false, message: "Please enter a valid email address" };
-    }
-    if (!password || password.length < 8) {
-      return { success: false, message: "Password must be at least 8 characters" };
+    const res = await fetch(`${API}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json() as {
+      success: boolean;
+      data?: { accessToken: string; user: { name: string; email: string; role: string } };
+      error?: string;
+    };
+
+    if (!data.success || !data.data) {
+      return { success: false, message: data.error ?? "Login failed" };
     }
 
     const cookieStore = await cookies();
 
-    // Set session cookie so middleware allows /account, /cart, /checkout
-    cookieStore.set(SESSION_COOKIE, JSON.stringify({ email, role: "customer" }), {
-      ...COOKIE_OPTS,
+    // Access token (short-lived, 15 min)
+    cookieStore.set("accessToken", data.data.accessToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env["NODE_ENV"] === "production",
+      maxAge: 60 * 15,
+    });
+
+    // Session cookie — role is read here by middleware to protect /admin
+    cookieStore.set("session", JSON.stringify({
+      name: data.data.user.name,
+      email: data.data.user.email,
+      role: data.data.user.role,
+    }), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env["NODE_ENV"] === "production",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    // Initialize empty cart cookie if not present
-    if (!cookieStore.has(CART_COOKIE)) {
-      cookieStore.set(CART_COOKIE, JSON.stringify([]), {
-        ...COOKIE_OPTS,
-        maxAge: 60 * 60 * 24 * 7,
-      });
-    }
-
-    return { success: true, message: "Welcome back!" };
+    return { success: true, message: "Welcome back!", data: data.data };
   } catch (err) {
     console.error("[loginAction]", err);
     return { success: false, message: "Login failed. Please try again." };
   }
 }
 
-// ── Customer logout ────────────────────────────────────────────────────────────
+// ── Register ──────────────────────────────────────────────────────────────────
+export async function registerAction(
+  name: string,
+  email: string,
+  password: string
+): Promise<ActionResult<{ accessToken: string }>> {
+  try {
+    const res = await fetch(`${API}/api/v1/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await res.json() as {
+      success: boolean;
+      data?: { accessToken: string; user: { name: string; email: string; role: string } };
+      error?: string;
+      details?: Record<string, string[]>;
+    };
+
+    if (!data.success || !data.data) {
+      return {
+        success: false,
+        message: data.error ?? "Registration failed",
+        fieldErrors: data.details,
+      };
+    }
+
+    const cookieStore = await cookies();
+    cookieStore.set("accessToken", data.data.accessToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env["NODE_ENV"] === "production",
+      maxAge: 60 * 15,
+    });
+    cookieStore.set("session", JSON.stringify({
+      name: data.data.user.name,
+      email: data.data.user.email,
+      role: data.data.user.role,
+    }), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env["NODE_ENV"] === "production",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return { success: true, message: "Account created!", data: { accessToken: data.data.accessToken } };
+  } catch (err) {
+    console.error("[registerAction]", err);
+    return { success: false, message: "Registration failed. Please try again." };
+  }
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────────
 export async function logoutAction(): Promise<ActionResult> {
   try {
+    await fetch(`${API}/api/v1/auth/logout`, { method: "POST" });
+
     const cookieStore = await cookies();
-    cookieStore.delete(SESSION_COOKIE);
-    cookieStore.delete(CART_COOKIE);
+    cookieStore.delete("session");
+    cookieStore.delete("accessToken");
+    cookieStore.delete("mern_cart");
+
     return { success: true, message: "Logged out." };
   } catch (err) {
     console.error("[logoutAction]", err);
@@ -65,35 +130,36 @@ export async function logoutAction(): Promise<ActionResult> {
   }
 }
 
-// ── Admin login ────────────────────────────────────────────────────────────────
+// ── Kept for backwards compatibility — now just calls loginAction ─────────────
 export async function adminLoginAction(
   email: string,
-  password: string,
-): Promise<ActionResult> {
-  try {
-    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
-      return { success: false, message: "Invalid credentials. Access denied." };
-    }
-    const cookieStore = await cookies();
-    cookieStore.set(ADMIN_COOKIE, "true", {
-      ...COOKIE_OPTS,
-      maxAge: 60 * 60 * 8, // 8 hours
-    });
-    return { success: true, message: "Welcome, Admin!" };
-  } catch (err) {
-    console.error("[adminLoginAction]", err);
-    return { success: false, message: "Login failed. Please try again." };
+  password: string
+): Promise<ActionResult<{ accessToken: string; user: { id: string; name: string; email: string; role: string; createdAt: string } }>> {
+  const result = await loginAction(email, password);
+
+  if (!result.success || !result.data) {
+    return { success: false, message: result.message ?? "Login failed" };
   }
+
+  if (result.data.user.role !== "admin") {
+    return { success: false, message: "Access denied. Admin role required." };
+  }
+
+  return {
+    success: true,
+    message: "Welcome, Admin!",
+    data: {
+      accessToken: result.data.accessToken,
+      user: {
+        id: "",
+        createdAt: "",
+        ...result.data.user,
+      },
+    },
+  };
 }
 
-// ── Admin logout ───────────────────────────────────────────────────────────────
+// ── Admin logout ──────────────────────────────────────────────────────────────
 export async function adminLogoutAction(): Promise<ActionResult> {
-  try {
-    const cookieStore = await cookies();
-    cookieStore.delete(ADMIN_COOKIE);
-    return { success: true, message: "Logged out." };
-  } catch (err) {
-    console.error("[adminLogoutAction]", err);
-    return { success: false, message: "Logout failed." };
-  }
+  return logoutAction();
 }

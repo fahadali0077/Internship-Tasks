@@ -1,11 +1,24 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ShoppingBag, ArrowLeft } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { toast } from "@/stores/toastStore";
 
-export const metadata: Metadata = { title: "Sign In — MERNShop" };
+function LoginPageInner() {
+  const searchParams = useSearchParams();
 
-export default function LoginPage() {
+  useEffect(() => {
+    if (searchParams.get("registered") === "true") {
+      toast.success("Account created!", "You can now sign in with your new account.");
+    }
+    if (searchParams.get("session") === "expired") {
+      toast.warning("Session expired", "Please sign in again to continue.");
+    }
+  }, [searchParams]);
+
   return (
     <div className="flex min-h-[80vh] items-center justify-center py-8">
       <div className="w-full max-w-sm">
@@ -38,5 +51,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
   );
 }

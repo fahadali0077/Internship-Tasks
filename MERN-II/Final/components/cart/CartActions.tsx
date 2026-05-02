@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { Minus, Plus, X, Loader2 } from "lucide-react";
 import { addToCart, removeFromCart, updateCartQty, clearCart } from "@/app/actions/cart";
 import type { ActionResult } from "@/types";
+import { toast } from "@/stores/toastStore";
 
 // ── Remove button ─────────────────────────────────────────────────────────────
 interface RemoveButtonProps { productId: string; productName: string; }
@@ -16,7 +17,12 @@ export function RemoveButton({ productId, productName }: RemoveButtonProps) {
     <button
       onClick={() => {
         startTransition(async () => {
-          await removeFromCart(productId);
+          const result = await removeFromCart(productId);
+          if (result.success) {
+            toast.info("Item removed", `${productName} removed from your cart.`);
+          } else {
+            toast.error("Could not remove item", result.message);
+          }
         });
       }}
       disabled={isPending}
@@ -39,7 +45,10 @@ export function QtyStepper({ productId, currentQty }: QtyStepperProps) {
 
   const update = (newQty: number) => {
     startTransition(async () => {
-      await updateCartQty(productId, newQty);
+      const result = await updateCartQty(productId, newQty);
+      if (!result.success) {
+        toast.error("Could not update quantity", result.message);
+      }
     });
   };
 
@@ -76,7 +85,12 @@ export function ClearCartButton() {
     <button
       onClick={() => {
         startTransition(async () => {
-          await clearCart();
+          const result = await clearCart();
+          if (result.success) {
+            toast.info("Cart cleared", "All items have been removed.");
+          } else {
+            toast.error("Could not clear cart", result.message);
+          }
         });
       }}
       disabled={isPending}
@@ -115,8 +129,10 @@ export function AddToCartActionButton({
       } else {
         result = await addToCart(productId, 1);
       }
-      if (!result.success) {
-        console.error(result.message);
+      if (result.success) {
+        if (!isInCart) toast.success("Added to cart", `${productName} is in your cart.`);
+      } else {
+        toast.error("Could not update cart", result.message);
       }
     });
   };
