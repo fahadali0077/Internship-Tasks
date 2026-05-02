@@ -1,0 +1,14 @@
+{
+    "name": "Ray-Ban Aviator Sunglasses",
+    "price": 154.99,
+    "image": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500"
+    ],
+    "rating": 4.8,
+    "reviewCount": 3210,
+    "category": "Fashion",
+    "badge": "Hot",
+    "description": "The iconic aviator style with crystal lenses and a metal frame. UV400 protection and polarized lenses available.",
+    "stock": 55
+}

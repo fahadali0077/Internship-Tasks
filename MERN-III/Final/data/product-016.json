@@ -1,0 +1,13 @@
+{
+    "name": "Clean Code by Robert C. Martin",
+    "price": 34.99,
+    "image": "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=500"
+    ],
+    "rating": 4.7,
+    "reviewCount": 12345,
+    "category": "Books",
+    "description": "A handbook of agile software craftsmanship. Essential reading for every professional software developer.",
+    "stock": 150
+}

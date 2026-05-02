@@ -1,0 +1,13 @@
+{
+    "name": "Yoga Mat Premium Non-Slip",
+    "price": 49.99,
+    "image": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=500"
+    ],
+    "rating": 4.6,
+    "reviewCount": 7890,
+    "category": "Sports",
+    "description": "Extra thick 6mm yoga mat with alignment lines. Non-slip surface, eco-friendly TPE material, includes carrying strap.",
+    "stock": 100
+}

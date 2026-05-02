@@ -1,0 +1,15 @@
+{
+    "name": "Samsung 4K OLED Smart TV 55\"",
+    "price": 899.99,
+    "originalPrice": 1099.99,
+    "image": "https://images.unsplash.com/photo-1593359677879-a4bb92f829e1?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1593359677879-a4bb92f829e1?w=500"
+    ],
+    "rating": 4.7,
+    "reviewCount": 1892,
+    "category": "Electronics",
+    "badge": "Sale",
+    "description": "Experience breathtaking 4K OLED picture quality with Quantum HDR and Object Tracking Sound technology.",
+    "stock": 15
+}

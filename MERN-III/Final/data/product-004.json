@@ -1,0 +1,14 @@
+{
+    "name": "iPhone 15 Pro Max",
+    "price": 1199.99,
+    "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=500"
+    ],
+    "rating": 4.9,
+    "reviewCount": 8901,
+    "category": "Electronics",
+    "badge": "New",
+    "description": "A17 Pro chip, titanium design, and the most powerful iPhone camera system ever. Pro camera system with 5x optical zoom.",
+    "stock": 30
+}

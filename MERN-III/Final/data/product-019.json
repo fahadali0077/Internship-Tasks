@@ -1,0 +1,15 @@
+{
+    "name": "Peloton Bike+ Indoor Cycle",
+    "price": 2195.0,
+    "originalPrice": 2495.0,
+    "image": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500"
+    ],
+    "rating": 4.7,
+    "reviewCount": 3456,
+    "category": "Sports",
+    "badge": "Sale",
+    "description": "The ultimate home fitness experience. Auto-Follow resistance, rotating HD touchscreen, and access to thousands of live and on-demand classes.",
+    "stock": 8
+}

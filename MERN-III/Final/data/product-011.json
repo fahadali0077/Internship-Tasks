@@ -1,0 +1,15 @@
+{
+    "name": "Instant Pot Duo 7-in-1",
+    "price": 79.99,
+    "originalPrice": 99.99,
+    "image": "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500"
+    ],
+    "rating": 4.7,
+    "reviewCount": 15678,
+    "category": "Home & Kitchen",
+    "badge": "Sale",
+    "description": "7-in-1 multi-use programmable pressure cooker, slow cooker, rice cooker, steamer, saut\u00e9, yogurt maker and warmer.",
+    "stock": 90
+}

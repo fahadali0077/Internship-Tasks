@@ -1,0 +1,16 @@
+{
+    "name": "Apple MacBook Air M2",
+    "price": 1099.99,
+    "originalPrice": 1199.99,
+    "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500",
+    "images": [
+        "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500",
+        "https://images.unsplash.com/photo-1611186871525-9ba4dc9a57e0?w=500"
+    ],
+    "rating": 4.9,
+    "reviewCount": 5678,
+    "category": "Electronics",
+    "badge": "Hot",
+    "description": "Supercharged by the next-generation M2 chip, MacBook Air is impossibly thin and can handle even the most demanding tasks.",
+    "stock": 20
+}
