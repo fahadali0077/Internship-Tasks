@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocket } from "@/hooks/useSocket";
 import { toast } from "@/stores/toastStore";
 import { cn } from "@/lib/utils";
-import { Loader2, RefreshCw, ChevronLeft, ChevronRight, Package, Zap, LayoutDashboard } from "lucide-react";
+import { Loader2, RefreshCw, ChevronLeft, ChevronRight, Package, Zap, LayoutDashboard, Trash2 } from "lucide-react";
 
 const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:5000";
 
@@ -24,11 +25,11 @@ interface Order {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  pending:    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber/10 dark:text-amber-300 dark:border-amber/20",
+  pending: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber/10 dark:text-amber-300 dark:border-amber/20",
   processing: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-500/20",
-  shipped:    "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-500/20",
-  delivered:  "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-500/20",
-  cancelled:  "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-500/20",
+  shipped: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-500/20",
+  delivered: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-500/20",
+  cancelled: "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-500/20",
 };
 
 const STATUS_FLOW: OrderStatus[] = ["pending", "processing", "shipped", "delivered", "cancelled"];
@@ -41,13 +42,34 @@ function StatusBadge({ status, orderId, token, onUpdated }: {
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
 
+  // Close on outside click
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (btnRef.current && !btnRef.current.contains(target)) setOpen(false);
+    };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
-  }, []);
+  }, [open]);
+
+  // Close on scroll so dropdown doesn't float away
+  useEffect(() => {
+    if (!open) return;
+    const h = () => setOpen(false);
+    window.addEventListener("scroll", h, true);
+    return () => window.removeEventListener("scroll", h, true);
+  }, [open]);
+
+  const handleOpen = () => {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    setCoords({ top: rect.bottom + 6, left: rect.left });
+    setOpen((v) => !v);
+  };
 
   const update = async (newStatus: OrderStatus) => {
     setLoading(true); setOpen(false);
@@ -66,10 +88,19 @@ function StatusBadge({ status, orderId, token, onUpdated }: {
     } finally { setLoading(false); }
   };
 
+  const DOT: Record<OrderStatus, string> = {
+    pending: "bg-amber-400",
+    processing: "bg-blue-500",
+    shipped: "bg-purple-500",
+    delivered: "bg-green-500",
+    cancelled: "bg-red-500",
+  };
+
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={handleOpen}
         disabled={loading}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize transition-all hover:opacity-80 disabled:opacity-50",
@@ -81,27 +112,30 @@ function StatusBadge({ status, orderId, token, onUpdated }: {
         <span className="text-[9px] opacity-60">▾</span>
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-border bg-white shadow-lg dark:border-dark-border dark:bg-dark-surface">
+          {/* Full-screen backdrop — catches clicks, does NOT block scroll */}
+          <div className="fixed inset-0 z-[9998]" style={{ pointerEvents: "none" }} />
+          <div
+            className="fixed z-[9999] w-44 overflow-hidden rounded-xl border border-border bg-white shadow-2xl dark:border-dark-border dark:bg-dark-surface"
+            style={{ top: coords.top, left: coords.left }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {STATUS_FLOW.filter((s) => s !== status).map((s) => (
               <button
                 key={s}
                 onClick={() => { void update(s); }}
-                className={cn(
-                  "flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold capitalize transition-colors hover:bg-surface-raised dark:hover:bg-dark-surface-2",
-                  STATUS_STYLES[s],
-                  "bg-transparent border-0",
-                )}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-semibold capitalize text-ink transition-colors hover:bg-surface-raised dark:text-white dark:hover:bg-dark-surface-2"
               >
+                <span className={cn("h-2 w-2 flex-shrink-0 rounded-full", DOT[s])} />
                 {s}
               </button>
             ))}
           </div>
-        </>
+        </>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
 
@@ -111,12 +145,12 @@ export default function AdminOrdersPage() {
   useEffect(() => { setHydrated(true); }, []);
 
   const { orders: socketOrders, connected } = useSocket({ maxOrders: 20 });
-  const [orders, setOrders]         = useState<Order[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState<string | null>(null);
-  const [page, setPage]             = useState(1);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal]           = useState(0);
+  const [total, setTotal] = useState(0);
   const hasFetched = useRef(false);
 
   const fetchOrders = useCallback(async (p = 1) => {
@@ -133,11 +167,16 @@ export default function AdminOrdersPage() {
         pagination: { pages: number; total: number };
       };
       setOrders(json.data);
-      setTotalPages(json.pagination.pages);
-      setTotal(json.pagination.total);
+      setTotalPages(json.pagination?.pages ?? 1);
+      setTotal(json.pagination?.total ?? json.data.length);
       setPage(p);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load orders");
+      const msg = err instanceof Error ? err.message : "Failed to load orders";
+      if (msg === "Failed to fetch") {
+        setError("Cannot reach the server. The backend may be starting up — please wait a moment and retry.");
+      } else {
+        setError(msg);
+      }
     } finally { setLoading(false); }
   }, [accessToken]);
 
@@ -146,6 +185,26 @@ export default function AdminOrdersPage() {
     hasFetched.current = true;
     void fetchOrders(1);
   }, [hydrated, fetchOrders]);
+
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm("Delete this order? This cannot be undone.")) return;
+    setDeletingOrderId(orderId);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/orders/${orderId}`, {
+        method: "DELETE",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
+      const json = await res.json() as { success: boolean; error?: string };
+      if (!json.success) throw new Error(json.error ?? "Delete failed");
+      setOrders((prev) => prev.filter((o) => o._id !== orderId));
+      setTotal((t) => t - 1);
+      toast.success("Order deleted");
+    } catch (err) {
+      toast.error("Failed to delete order", err instanceof Error ? err.message : "Unknown");
+    } finally { setDeletingOrderId(null); }
+  };
 
   const handleStatusUpdate = (id: string, status: OrderStatus) => {
     setOrders((prev) => prev.map((o) => o._id === id ? { ...o, status } : o));
@@ -176,7 +235,7 @@ export default function AdminOrdersPage() {
             <span className={cn(
               "flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
               connected ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-surface-raised text-ink-muted",
+                : "bg-surface-raised text-ink-muted",
             )}>
               <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "animate-pulse bg-green-500" : "bg-ink-muted/40")} />
               {connected ? "Live" : "Offline"}
@@ -207,9 +266,16 @@ export default function AdminOrdersPage() {
         )}
 
         {!loading && error && (
-          <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <p className="text-sm text-red-500">{error}</p>
-            <button onClick={() => { void fetchOrders(1); }} className="text-xs font-semibold text-amber underline">Retry</button>
+          <div className="flex flex-col items-center gap-3 py-20 text-center px-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
+              <span className="text-xl">⚠️</span>
+            </div>
+            <p className="text-sm font-medium text-red-500">{error}</p>
+            {error?.includes("sign in") ? (
+              <a href="/admin/login" className="text-xs font-semibold text-amber underline">Go to Login →</a>
+            ) : (
+              <button onClick={() => { void fetchOrders(1); }} className="text-xs font-semibold text-amber underline">Retry</button>
+            )}
           </div>
         )}
 
@@ -225,7 +291,7 @@ export default function AdminOrdersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-raised/60 dark:border-dark-border dark:bg-dark-surface-2/40">
-                  {["Order ID", "Customer", "Items", "Total", "Status", "Date"].map((h) => (
+                  {["Order ID", "Customer", "Items", "Total", "Status", "Date", ""].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-muted">{h}</th>
                   ))}
                 </tr>
@@ -265,6 +331,18 @@ export default function AdminOrdersPage() {
                       </td>
                       <td className="px-5 py-3.5 text-xs text-ink-muted">
                         {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </td>
+                      <td className="px-3 py-3.5">
+                        <button
+                          onClick={() => { void handleDeleteOrder(order._id); }}
+                          disabled={deletingOrderId === order._id}
+                          className="flex items-center justify-center rounded-lg border border-red-200 p-1.5 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40 dark:border-red-900/30 dark:hover:bg-red-900/20"
+                          title="Delete order"
+                        >
+                          {deletingOrderId === order._id
+                            ? <Loader2 size={13} className="animate-spin" />
+                            : <Trash2 size={13} />}
+                        </button>
                       </td>
                     </tr>
                   );

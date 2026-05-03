@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 connectDB().then(() => {
   httpServer.listen(PORT, () => {
-    console.log(`\n🚀  MERNShop API — Module 7`);
+    console.log(`\n🚀  MERNShop API — Production`);
     console.log(`   http://localhost:${PORT}/api/health`);
     console.log(`   ws://localhost:${PORT}  (Socket.IO)\n`);
   });

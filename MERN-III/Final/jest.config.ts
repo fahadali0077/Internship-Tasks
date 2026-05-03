@@ -20,7 +20,7 @@ const config: Config = {
     ],
   },
   testMatch: ["**/__tests__/**/*.test.ts"],
-  setupFilesAfterFramework: [],
+  setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
   collectCoverageFrom: [
     "src/**/*.ts",
     "!src/cli/**",

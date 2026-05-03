@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   useReactTable, getCoreRowModel, getSortedRowModel,
@@ -36,6 +36,16 @@ const EMPTY_PRODUCT: Omit<AdminProduct, "id" | "_id" | "rating"> = {
   name: "", category: "Electronics", price: 0,
   stock: 0, badge: null, image: "", description: "", originalPrice: null,
 };
+
+// ── Field wrapper — must be outside ProductModal to keep stable identity ──────
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-ink-muted uppercase tracking-wide">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 // ── Edit / Create Modal ───────────────────────────────────────────────────────
 function ProductModal({
@@ -111,13 +121,6 @@ function ProductModal({
       setSaving(false);
     }
   };
-
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-ink-muted uppercase tracking-wide">{label}</label>
-      {children}
-    </div>
-  );
 
   const inputCls = "w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-dark-border dark:bg-dark-surface dark:text-white";
 
@@ -219,18 +222,25 @@ export function ProductsTable() {
     setLoading(true); setError(null);
     try {
       const res = await fetch(`${API_URL}/api/v1/products?limit=100`);
-      if (!res.ok) throw new Error(`Server ${res.status}`);
+      if (res.status === 401) { setError("Session expired — please sign in again."); return; }
+      if (res.status === 403) { setError("Access denied — admin privileges required."); return; }
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
       const json = await res.json() as { success: boolean; data: AdminProduct[] };
       if (!json.success) throw new Error("API error");
       setProducts(json.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      if (msg === "Failed to fetch") {
+        setError("Cannot reach the server. Check your internet connection or the backend may be starting up — please wait a moment and retry.");
+      } else {
+        setError(msg);
+      }
     } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { if (hydrated) void fetchProducts(); }, [hydrated, fetchProducts]);
 
-  const handleDelete = async (product: AdminProduct) => {
+  const handleDelete = useCallback(async (product: AdminProduct) => {
     if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
     const id = product._id ?? product.id;
     setDeletingId(id);
@@ -246,16 +256,24 @@ export function ProductsTable() {
     } catch (err) {
       toast.error("Failed to delete", err instanceof Error ? err.message : "Unknown");
     } finally { setDeletingId(null); }
-  };
+  }, [accessToken]);
 
-  const handleSaved = (saved: AdminProduct) => {
+  const handleSaved = useCallback((saved: AdminProduct) => {
     setProducts((prev) => {
       const id = saved._id ?? saved.id;
       const idx = prev.findIndex((p) => (p._id ?? p.id) === id);
       if (idx >= 0) { const next = [...prev]; next[idx] = saved; return next; }
       return [saved, ...prev];
     });
-  };
+  }, []);
+
+  // Keep a ref to deletingId so columns don't need to be re-created on every change
+  const deletingIdRef = useRef<string | null>(null);
+  deletingIdRef.current = deletingId;
+  const handleDeleteRef = useRef(handleDelete);
+  handleDeleteRef.current = handleDelete;
+  const setEditProductRef = useRef(setEditProduct);
+  setEditProductRef.current = setEditProduct;
 
   const columns = useMemo(() => [
     columnHelper.accessor("name", {
@@ -301,17 +319,17 @@ export function ProductsTable() {
       cell: (info) => {
         const p = info.row.original;
         const pid = p._id ?? p.id;
-        const isDeleting = deletingId === pid;
+        const isDeleting = deletingIdRef.current === pid;
         return (
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setEditProduct(p)}
+              onClick={() => setEditProductRef.current(p)}
               className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:border-primary hover:text-primary dark:border-dark-border"
             >
               <Pencil size={11} /> Edit
             </button>
             <button
-              onClick={() => { void handleDelete(p); }}
+              onClick={() => { void handleDeleteRef.current(p); }}
               disabled={isDeleting}
               className="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40 dark:border-red-900/30 dark:hover:bg-red-900/20"
             >
@@ -322,7 +340,7 @@ export function ProductsTable() {
         );
       },
     }),
-  ], [deletingId]);
+  ], []);
 
   const filteredData = useMemo(() =>
     selectedCategory === "All" ? products : products.filter((p) => p.category === selectedCategory),
@@ -405,9 +423,16 @@ export function ProductsTable() {
 
         {/* Error */}
         {!loading && error && (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm text-red-500">{error}</p>
-            <button onClick={() => { void fetchProducts(); }} className="text-xs font-semibold text-amber underline">Retry</button>
+          <div className="flex flex-col items-center gap-3 py-16 text-center px-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
+              <span className="text-xl">⚠️</span>
+            </div>
+            <p className="text-sm font-medium text-red-500">{error}</p>
+            {error.includes("sign in") ? (
+              <a href="/admin/login" className="text-xs font-semibold text-amber underline">Go to Login →</a>
+            ) : (
+              <button onClick={() => { void fetchProducts(); }} className="text-xs font-semibold text-amber underline">Retry</button>
+            )}
           </div>
         )}
 
