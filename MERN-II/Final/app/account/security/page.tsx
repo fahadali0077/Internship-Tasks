@@ -7,6 +7,37 @@ import { useAuthStore } from "@/stores/authStore";
 
 const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:5000";
 
+// ── Must be outside SecurityPage to keep a stable identity across renders ─────
+function PwField({ field, label, showKey, form, show, errors, onFormChange, onShowToggle }: {
+  field: "currentPassword" | "newPassword" | "confirmPassword";
+  label: string;
+  showKey: "current" | "new" | "confirm";
+  form: { currentPassword: string; newPassword: string; confirmPassword: string };
+  show: { current: boolean; new: boolean; confirm: boolean };
+  errors: Partial<{ currentPassword: string; newPassword: string; confirmPassword: string }>;
+  onFormChange: (field: string, value: string) => void;
+  onShowToggle: (key: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-ink-muted dark:text-white/50">{label}</label>
+      <div className="relative">
+        <input
+          type={show[showKey] ? "text" : "password"}
+          value={form[field]}
+          onChange={e => onFormChange(field, e.target.value)}
+          className={`w-full rounded-lg border pr-10 pl-3 py-2.5 text-sm outline-none focus:border-primary dark:bg-dark-surface-2 dark:text-white ${errors[field] ? "border-red-400" : "border-border dark:border-dark-border"}`}
+        />
+        <button type="button" onClick={() => onShowToggle(showKey)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
+          {show[showKey] ? <EyeOff size={14} /> : <Eye size={14} />}
+        </button>
+      </div>
+      {errors[field] && <p className="mt-0.5 text-[11px] text-red-500">{errors[field]}</p>}
+    </div>
+  );
+}
+
 export default function SecurityPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -19,8 +50,11 @@ export default function SecurityPage() {
     const e: Partial<typeof form> = {};
     if (!form.currentPassword) e.currentPassword = "Required";
     if (form.newPassword.length < 8) e.newPassword = "At least 8 characters";
+    else if (!/[A-Z]/.test(form.newPassword)) e.newPassword = "Must contain an uppercase letter";
+    else if (!/[0-9]/.test(form.newPassword)) e.newPassword = "Must contain a number";
+    else if (!/[^A-Za-z0-9]/.test(form.newPassword)) e.newPassword = "Must contain a special character (!@#$...)";
+    else if (form.newPassword === form.currentPassword) e.newPassword = "New password must be different";
     if (form.newPassword !== form.confirmPassword) e.confirmPassword = "Passwords don't match";
-    if (form.newPassword === form.currentPassword) e.newPassword = "New password must be different";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -59,24 +93,14 @@ export default function SecurityPage() {
   const strength_colors = ["", "bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-500"];
   const strength_labels = ["", "Weak", "Fair", "Good", "Strong"];
 
-  const PwField = ({ field, label, showKey }: { field: keyof typeof form; label: string; showKey: keyof typeof show }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-ink-muted dark:text-white/50">{label}</label>
-      <div className="relative">
-        <input
-          type={show[showKey] ? "text" : "password"}
-          value={form[field]}
-          onChange={e => { setForm(p => ({ ...p, [field]: e.target.value })); setStatus("idle"); }}
-          className={`w-full rounded-lg border pr-10 pl-3 py-2.5 text-sm outline-none focus:border-primary dark:bg-dark-surface-2 dark:text-white ${errors[field] ? "border-red-400" : "border-border dark:border-dark-border"}`}
-        />
-        <button type="button" onClick={() => setShow(s => ({ ...s, [showKey]: !s[showKey] }))}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
-          {show[showKey] ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
-      </div>
-      {errors[field] && <p className="mt-0.5 text-[11px] text-red-500">{errors[field]}</p>}
-    </div>
-  );
+  const handleFormChange = (field: string, value: string) => {
+    setForm(p => ({ ...p, [field]: value }));
+    setStatus("idle");
+  };
+
+  const handleShowToggle = (key: string) => {
+    setShow(s => ({ ...s, [key]: !s[key as keyof typeof s] }));
+  };
 
   return (
     <div className="mx-auto max-w-lg">
@@ -97,8 +121,8 @@ export default function SecurityPage() {
           <h2 className="text-sm font-semibold text-ink dark:text-white">Change Password</h2>
         </div>
         <div className="space-y-4 p-6">
-          <PwField field="currentPassword" label="Current Password" showKey="current" />
-          <PwField field="newPassword" label="New Password" showKey="new" />
+          <PwField field="currentPassword" label="Current Password" showKey="current" form={form} show={show} errors={errors} onFormChange={handleFormChange} onShowToggle={handleShowToggle} />
+          <PwField field="newPassword" label="New Password" showKey="new" form={form} show={show} errors={errors} onFormChange={handleFormChange} onShowToggle={handleShowToggle} />
 
           {/* Strength meter */}
           {form.newPassword && (
@@ -112,7 +136,7 @@ export default function SecurityPage() {
             </div>
           )}
 
-          <PwField field="confirmPassword" label="Confirm New Password" showKey="confirm" />
+          <PwField field="confirmPassword" label="Confirm New Password" showKey="confirm" form={form} show={show} errors={errors} onFormChange={handleFormChange} onShowToggle={handleShowToggle} />
 
           {status === "success" && (
             <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">✓ {message}</div>
